@@ -1,0 +1,48 @@
+#!/bin/bash
+
+ADB="/usr/bin/adb"  # caminho do adb
+TV_IPS=("10.83.205.50:5555" "10.83.205.54:5555")  # lista de TVs
+
+ligar_tv() {
+    for IP in "${TV_IPS[@]}"; do
+        echo "[$(date '+%H:%M:%S')] Ligando TV $IP..."
+        $ADB -s "$IP" shell input keyevent 26
+    done
+}
+
+desligar_tv() {
+    for IP in "${TV_IPS[@]}"; do
+        echo "[$(date '+%H:%M:%S')] Desligando TV $IP..."
+        $ADB -s "$IP" shell input keyevent 26
+    done
+}
+
+echo "Automação de energia para TCL Android TV iniciada..."
+
+executado08=false
+executado18=false
+data_atual=$(date +%F)
+
+while true; do
+    agora=$(date +%H:%M)
+    hoje=$(date +%F)
+
+    # Reset diário
+    if [ "$hoje" != "$data_atual" ]; then
+        executado08=false
+        executado18=false
+        data_atual=$hoje
+    fi
+
+    if [ "$agora" == "08:00" ] && [ "$executado08" == false ]; then
+        ligar_tv
+        executado08=true
+    fi
+
+    if [ "$agora" == "18:00" ] && [ "$executado18" == false ]; then
+        desligar_tv
+        executado18=true
+    fi
+
+    sleep 30
+done
