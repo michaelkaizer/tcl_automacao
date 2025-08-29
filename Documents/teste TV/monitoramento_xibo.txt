@@ -1,0 +1,38 @@
+#!/bin/bash
+
+ADB="/usr/bin/adb"
+APP_XIBO="uk.org.xibo.client"
+ACTIVITY_XIBO="uk.org.xibo.player.Player"
+TV_IPS=("10.83.205.50:5555" "10.83.205.54:5555")
+
+abrir_xibo() {
+    for IP in "${TV_IPS[@]}"; do
+        echo "[$(date '+%H:%M:%S')] Verificando TV $IP..."
+
+        # Verifica se o Xibo está em primeiro plano
+        status=$($ADB -s "$IP" shell dumpsys activity activities | grep "mResumedActivity" | grep "$APP_XIBO")
+
+        if [ -z "$status" ]; then
+            echo "[$(date '+%H:%M:%S')] Xibo não está em primeiro plano na TV $IP. Reabrindo..."
+            $ADB -s "$IP" shell am start -n "$APP_XIBO"/"$ACTIVITY_XIBO"
+            sleep 5
+
+            # Verifica novamente após tentativa
+            status_check=$($ADB -s "$IP" shell dumpsys activity activities | grep "mResumedActivity" | grep "$APP_XIBO")
+            if [ -n "$status_check" ]; then
+                echo "[$(date '+%H:%M:%S')] Xibo foi iniciado com sucesso na TV $IP."
+            else
+                echo "[$(date '+%H:%M:%S')] Falha ao iniciar o Xibo na TV $IP."
+            fi
+        else
+            echo "[$(date '+%H:%M:%S')] Xibo já está em primeiro plano na TV $IP."
+        fi
+    done
+}
+
+echo "Monitoramento contínuo do Xibo iniciado..."
+
+while true; do
+    abrir_xibo
+    sleep 60
+done
